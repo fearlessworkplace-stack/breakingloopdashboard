@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Breaking the Loop · Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=DM+Sans:ital,wght@0,300..700;1,300..700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --off-white:#F5F7FB; --white:#FFFFFF; --paper:#FBFCFE;
+  --navy:#002147; --navy2:#0A2F5C;
+  --teal:#2F6E83; --tealL:#4E93AB; --tealPale:#E4EEF1;
+  --azure:#3987A0; --azurePale:#E7F1F4;
+  --copper:#C76A2E; --copperPale:#F7E9DD;
+  --slate:#5E6670; --line:rgba(0,33,71,.12);
+  --burgundy:#8B2635;
+  --ink:#12202E;
+  --font-display:'Anton',sans-serif; --font-body:'DM Sans',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:var(--font-body);color:var(--ink);background:var(--off-white);min-height:100vh}
+@keyframes drift{0%{transform:translate(0,0)}50%{transform:translate(12px,-8px)}100%{transform:translate(0,0)}}
+@keyframes floatUp{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+@keyframes dash{to{stroke-dashoffset:0}}
+@keyframes pulseRing{0%{transform:scale(.6);opacity:.7}100%{transform:scale(1.5);opacity:0}}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+
+.topbar{position:sticky;top:0;z-index:50;background:var(--navy);display:flex;align-items:center;justify-content:space-between;padding:14px 22px;border-bottom:1px solid rgba(255,255,255,.08)}
+.brand{display:flex;align-items:center;gap:12px}
+.brand svg{width:32px;height:32px;flex:none}
+.brand .bt{line-height:1.15}
+.brand .bt .b1{font-family:var(--font-display);font-weight:400;font-size:16px;letter-spacing:.5px;color:var(--off-white);text-transform:uppercase}
+.brand .bt .b1 em{font-style:normal;color:var(--tealL)}
+.brand .bt .b2{font-size:10px;letter-spacing:1.5px;color:rgba(255,255,255,.5);text-transform:uppercase;margin-top:2px}
+.progresspill{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:99px;padding:7px 15px 7px 9px}
+.ring{width:26px;height:26px;transform:rotate(-90deg)}
+.ring circle{fill:none;stroke-width:3}
+.ring .rbg{stroke:rgba(255,255,255,.14)}
+.ring .rfill{stroke:var(--tealL);stroke-linecap:round;stroke-dasharray:62.8;stroke-dashoffset:62.8;transition:stroke-dashoffset .5s ease}
+.progresspill span{font-size:11px;color:var(--off-white);letter-spacing:1px;font-weight:600}
+
+.layout{display:flex;max-width:1220px;margin:0 auto;gap:26px;padding:26px 22px 90px}
+.rail{width:250px;flex:none;position:sticky;top:86px;align-self:flex-start}
+.rail .rtitle{font-family:var(--font-display);font-weight:400;font-size:20px;letter-spacing:.3px;color:var(--navy);margin-bottom:4px;text-transform:uppercase}
+.rail .rpct{font-size:10px;letter-spacing:1.5px;color:var(--slate);margin-bottom:8px;font-weight:600}
+.railbar{height:5px;background:rgba(0,33,71,.08);border-radius:99px;overflow:hidden;margin-bottom:18px}
+.railbar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--teal),var(--tealL));border-radius:99px;transition:width .5s ease}
+.ritem{display:flex;gap:12px;align-items:flex-start;width:100%;text-align:left;background:var(--white);border:1px solid var(--line);border-radius:12px;padding:13px 14px;cursor:pointer;margin-bottom:10px;transition:border-color .2s,box-shadow .2s;font-family:var(--font-body)}
+.ritem:hover{border-color:var(--tealL);box-shadow:0 4px 14px rgba(47,110,131,.12)}
+.ritem.active{border-color:var(--teal);box-shadow:0 0 0 2px rgba(47,110,131,.22),0 6px 18px rgba(47,110,131,.14)}
+.ritem .circ{width:19px;height:19px;flex:none;margin-top:2px;border-radius:50%;border:2px solid rgba(0,33,71,.25);position:relative;transition:all .25s}
+.ritem.done .circ{background:var(--teal);border-color:var(--teal)}
+.ritem.done .circ::after{content:'✓';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;font-weight:800}
+.ritem .rt .re{font-size:8.5px;letter-spacing:1.5px;color:var(--slate);text-transform:uppercase;display:block;margin-bottom:2px;font-weight:700}
+.ritem .rt .rn{font-weight:700;font-size:14px;color:var(--ink);line-height:1.25}
+.main{flex:1;min-width:0}
+.view{display:none}
+.view.active{display:block;animation:fadein .35s ease}
+@keyframes fadein{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+.eyebrowrow{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:10px;flex-wrap:wrap}
+.eyebrow{font-size:11px;letter-spacing:2px;color:var(--teal);text-transform:uppercase;font-weight:700}
+.mc{font-size:10px;letter-spacing:1px;text-transform:uppercase;font-weight:700;border:1.5px solid rgba(0,33,71,.25);background:var(--white);color:var(--ink);border-radius:99px;padding:9px 16px;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:7px}
+.mc:hover{border-color:var(--teal)}
+.mc.done{background:var(--teal);border-color:var(--teal);color:#fff}
+h1.vt{font-family:var(--font-display);font-weight:400;font-size:clamp(26px,3.6vw,36px);line-height:1.1;letter-spacing:.2px;margin-bottom:8px;color:var(--navy);text-transform:uppercase}
+h1.vt em{font-style:normal;color:var(--teal)}
+.vsub{color:var(--slate);font-size:16px;max-width:640px;line-height:1.6;margin-bottom:18px}
+.goal{font-size:15px;color:var(--navy);font-weight:700;margin-bottom:22px;padding:14px 18px;background:var(--tealPale);border-radius:12px;border-left:4px solid var(--teal);max-width:640px;line-height:1.5}
+.panel{background:var(--white);border:1px solid var(--line);border-radius:16px;padding:22px 24px;margin-bottom:20px;box-shadow:0 2px 10px rgba(0,33,71,.04)}
+.ptitle{display:flex;align-items:center;gap:11px;margin-bottom:16px}
+.ptitle .pic{width:32px;height:32px;flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--tealPale);color:var(--teal);font-size:15px;font-weight:800}
+.ptitle .pic.m{background:var(--copperPale);color:var(--copper)}
+.ptitle h2{font-size:12px;letter-spacing:2px;text-transform:uppercase;color:var(--ink);font-weight:700}
+.ptitle .cnt{margin-left:auto;font-size:10px;letter-spacing:1px;color:var(--slate);font-weight:600}
+
+.vizframe{background:var(--navy);border-radius:16px;padding:14px;margin-bottom:20px;position:relative;overflow:hidden;box-shadow:0 10px 30px rgba(0,33,71,.18)}
+.vizframe .glow{position:absolute;width:260px;height:260px;border-radius:50%;filter:blur(70px);opacity:.3;pointer-events:none;animation:drift 9s ease-in-out infinite}
+.vizframe .g1{background:var(--teal);top:-90px;left:-60px}
+.vizframe .g2{background:var(--copper);bottom:-100px;right:-60px;animation-delay:-4s}
+.vizframe svg{display:block;width:100%;height:auto;position:relative}
+
+.tk{display:flex;gap:12px;padding:11px 0;border-bottom:1px dashed var(--line);align-items:flex-start}
+.tk:last-child{border-bottom:none}
+.tk .ar{color:var(--teal);font-weight:800;flex:none;margin-top:1px}
+.tk p{font-size:15px;line-height:1.55;color:var(--ink)}
+.tk p strong{font-weight:800}
+
+.lesson{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:10px}
+.lesson .ln{font-size:9.5px;color:var(--copper);font-weight:800;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:5px}
+.lesson h3{font-size:15px;font-weight:800;margin-bottom:4px;color:var(--navy)}
+.lesson p{font-size:13.5px;color:var(--slate);line-height:1.55}
+
+.step{display:flex;gap:13px;align-items:flex-start;width:100%;text-align:left;background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:10px;cursor:pointer;font-family:var(--font-body);transition:border-color .2s}
+.step:hover{border-color:var(--tealL)}
+.step .box{width:21px;height:21px;flex:none;margin-top:1px;border-radius:7px;border:2px solid rgba(0,33,71,.25);position:relative;transition:all .2s}
+.step.on .box{background:var(--teal);border-color:var(--teal)}
+.step.on .box::after{content:'✓';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:800}
+.step .sn{font-size:10px;color:var(--copper);margin-top:4px;flex:none;font-weight:800}
+.step .sb strong{display:block;font-size:14px;font-weight:700;margin-bottom:2px}
+.step .sb span{font-size:13px;color:var(--slate);line-height:1.45}
+.step.on .sb strong{text-decoration:line-through;text-decoration-color:rgba(47,110,131,.6);text-decoration-thickness:2px}
+.steplink{color:var(--teal);font-weight:700;text-decoration:underline;text-underline-offset:2px}
+.steplink:hover{color:var(--copper)}
+
+.cards3{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin-bottom:20px}
+.icard{background:var(--white);border:1px solid var(--line);border-radius:14px;padding:18px;transition:transform .2s,box-shadow .2s}
+.icard:hover{transform:translateY(-3px);box-shadow:0 10px 24px rgba(47,110,131,.12)}
+.icard h3{font-size:15px;font-weight:800;margin-bottom:5px;line-height:1.3;color:var(--navy)}
+.icard p{font-size:13px;color:var(--slate);line-height:1.5}
+
+.toolcta{display:flex;align-items:center;gap:14px;background:var(--tealPale);border:1px solid rgba(47,110,131,.25);border-radius:14px;padding:16px 20px;margin-top:8px;flex-wrap:wrap}
+.toolcta p{font-size:14px;color:var(--ink);line-height:1.5;flex:1;min-width:200px}
+.toolcta a{flex:none;font-size:11px;letter-spacing:1px;text-transform:uppercase;font-weight:700;background:var(--teal);color:#fff;border-radius:99px;padding:11px 20px;text-decoration:none;display:inline-block}
+.toolcta.pending{background:var(--copperPale);border-color:rgba(199,106,46,.3)}
+.toolcta.pending .pendingtag{flex:none;font-size:10px;letter-spacing:1px;text-transform:uppercase;font-weight:800;color:var(--copper);border:1.5px solid var(--copper);border-radius:99px;padding:8px 14px}
+
+.assess-q{margin-bottom:16px}
+.assess-q p{font-size:14px;color:var(--ink);margin-bottom:8px;line-height:1.5}
+.assess-q select{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--white);font-family:var(--font-body);font-size:13.5px;color:var(--ink)}
+.assess-result{display:none;margin-top:16px;padding:16px 18px;background:var(--tealPale);border-radius:12px;border-left:4px solid var(--teal);font-size:15px;color:var(--navy);font-weight:700;line-height:1.6}
+
+.turn{background:var(--navy);border-radius:16px;padding:26px 28px;margin-bottom:20px;position:relative;overflow:hidden}
+.turn .glow{position:absolute;width:220px;height:220px;border-radius:50%;filter:blur(70px);opacity:.32;background:var(--teal);top:-80px;right:-60px;animation:drift 9s ease-in-out infinite}
+.turn h2{position:relative;font-family:var(--font-display);font-weight:400;font-size:clamp(20px,2.6vw,26px);color:var(--off-white);line-height:1.2;margin-bottom:8px;text-transform:uppercase}
+.turn h2 em{font-style:normal;color:var(--tealL)}
+.turn p{position:relative;color:rgba(255,255,255,.72);font-size:14.5px;line-height:1.6;max-width:600px}
+
+.ctaband{background:var(--navy);border-radius:16px;padding:24px 26px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;position:relative;overflow:hidden}
+.ctaband .glow{position:absolute;width:200px;height:200px;border-radius:50%;filter:blur(60px);opacity:.32;background:var(--copper);top:-70px;right:-40px}
+.ctaband p{position:relative;color:var(--off-white);font-size:15px;font-weight:600}
+.ctaband p em{font-style:normal;font-family:var(--font-display);font-weight:400;font-size:20px;color:var(--tealL);text-transform:uppercase}
+.ctabtn{position:relative;font-size:11px;letter-spacing:1.4px;text-transform:uppercase;font-weight:700;background:var(--teal);border:none;color:#fff;border-radius:99px;padding:13px 24px;cursor:pointer}
+.ctabtn:hover{filter:brightness(1.1)}
+
+.bigcta{display:inline-flex;align-items:center;gap:9px;font-size:13px;letter-spacing:1.2px;text-transform:uppercase;font-weight:800;background:var(--copper);color:#fff;border:none;border-radius:99px;padding:17px 30px;cursor:pointer;box-shadow:0 10px 22px rgba(199,106,46,.35);transition:transform .15s,box-shadow .15s}
+.bigcta:hover{transform:translateY(-2px);box-shadow:0 12px 28px rgba(199,106,46,.45)}
+.assess-wrap{display:none;margin-top:22px;padding-top:20px;border-top:1px dashed var(--line)}
+
+.sources{margin-top:8px;text-align:center}
+.sources summary{cursor:pointer;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--slate);font-weight:700;list-style:none;display:inline-block}
+.sources summary::-webkit-details-marker{display:none}
+.sourcesbody{font-size:12.5px;color:var(--slate);line-height:1.9;text-align:left;max-width:520px;margin:12px auto 0;background:var(--white);border:1px solid var(--line);border-radius:12px;padding:16px 20px}
+
+@media (max-width: 900px){
+  .layout{flex-direction:column;padding:18px 14px 70px}
+  .rail{width:100%;position:static}
+  .rail .items{display:flex;gap:9px;overflow-x:auto;padding-bottom:8px;-webkit-overflow-scrolling:touch}
+  .ritem{flex:none;width:200px;margin-bottom:0}
+  .panel,.turn{padding:18px}
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <svg viewBox="0 0 32 32" fill="none">
+      <circle cx="16" cy="16" r="13" stroke="rgba(255,255,255,.35)" stroke-width="1.5" stroke-dasharray="4 3"/>
+      <path d="M16 6 C22 6 26 10 26 16 C26 22 22 26 16 26 C10 26 6 22 6 16" stroke="#4E93AB" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+      <circle cx="16" cy="16" r="3" fill="#4E93AB"/>
+      <path d="M6 13 L6 16 L9 16" stroke="#4E93AB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    </svg>
+    <div class="bt">
+      <div class="b1">Breaking the <em>Loop</em></div>
+      <div class="b2">Dashboard</div>
+    </div>
+  </div>
+  <div class="progresspill">
+    <svg class="ring" viewBox="0 0 26 26"><circle class="rbg" cx="13" cy="13" r="10"/><circle class="rfill" id="ringFill" cx="13" cy="13" r="10"/></svg>
+    <span id="pctTop">0%</span>
+  </div>
+</header>
+
+<div class="layout">
+
+<nav class="rail" aria-label="Course navigation">
+  <div class="rtitle">Your path</div>
+  <div class="rpct"><span id="pctRail">0%</span> COMPLETE</div>
+  <div class="railbar"><i id="railBar"></i></div>
+  <div class="items">
+    <button class="ritem active" data-view="start" onclick="go('start')">
+      <span class="circ"></span><span class="rt"><span class="re">Start here</span><span class="rn">Orientation</span></span>
+    </button>
+    <button class="ritem" data-view="m1" data-lesson="m1" onclick="go('m1')">
+      <span class="circ"></span><span class="rt"><span class="re">Module 1</span><span class="rn">Interrupt</span></span>
+    </button>
+    <button class="ritem" data-view="m2" data-lesson="m2" onclick="go('m2')">
+      <span class="circ"></span><span class="rt"><span class="re">Module 2</span><span class="rn">Understand</span></span>
+    </button>
+    <button class="ritem" data-view="m3" data-lesson="m3" onclick="go('m3')">
+      <span class="circ"></span><span class="rt"><span class="re">Module 3</span><span class="rn">Respond</span></span>
+    </button>
+    <button class="ritem" data-view="m4" data-lesson="m4" onclick="go('m4')">
+      <span class="circ"></span><span class="rt"><span class="re">Module 4</span><span class="rn">Reclaim</span></span>
+    </button>
+  </div>
+</nav>
+
+<main class="main">
+
+<!-- ========== START ========== -->
+<section class="view active" id="view-start">
+  <div class="eyebrowrow"><span class="eyebrow">Start here</span></div>
+  <h1 class="vt">Break <em>the loop.</em></h1>
+  <p class="vsub">Four modules, one path: interrupt the loop, understand what happened, decide how to respond, and leave able to navigate it. Each module tells you exactly what to do and which tool to use, so you always know your next step.</p>
+
+  <div class="vizframe">
+    <div class="glow g1"></div><div class="glow g2"></div>
+    <div id="journeySvg"></div>
+  </div>
+
+  <div class="cards3">
+    <div class="icard"><h3>Same thought, on repeat</h3><p>Rumination is a brain pattern with a clear cause. This course gives you a way through it, one module at a time.</p></div>
+    <div class="icard"><h3>Tools are built into the process</h3><p>The dashboard connects you to the exercises and resources you will use throughout each module.</p></div>
+    <div class="icard"><h3>You'll see your own change</h3><p>You'll take an assessment before you start and again at the end, so you can actually see how far you've come, not just take it on faith.</p></div>
+  </div>
+
+  <div class="panel">
+    <div class="ptitle"><div class="pic">✦</div><h2>Your first step</h2></div>
+    <p style="font-size:14px;color:var(--slate);line-height:1.6;margin-bottom:18px">Before Module 1 starts, take one minute for a quick assessment. Think of one specific work situation you've been replaying, and answer six honest questions about it. You'll answer the same six again at the end of Module 4, so you can see exactly what changed, not just hope something did.</p>
+    <button class="bigcta" onclick="toggleAssessment('pre')" id="pre-toggle-btn">Take My Pre-Assessment →</button>
+    <div class="assess-wrap" id="pre-assess-wrap">
+      <div id="preAssess"></div>
+      <button class="ctabtn" style="margin-top:6px" onclick="submitAssessment('pre')">Get My Score</button>
+      <div class="assess-result" id="pre-result"></div>
+    </div>
+  </div>
+
+  <div class="ctaband">
+    <div class="glow"></div>
+    <p><em>Ready?</em> Start with Module 1.</p>
+    <button class="ctabtn" onclick="go('m1')">Module 1 →</button>
+  </div>
+</section>
+
+<!-- ========== MODULE 1 ========== -->
+<section class="view" id="view-m1">
+  <div class="eyebrowrow">
+    <span class="eyebrow">Module 1 of 4</span>
+    <button class="mc" id="mc-m1" onclick="markComplete('m1')"><span class="mc-txt">Mark Complete</span></button>
+  </div>
+  <h1 class="vt">Interrupt</h1>
+  <div class="goal">Recognize rumination early, interrupt the loop, and calm down enough to think clearly again.</div>
+
+  <div class="vizframe"><div class="glow g1"></div><div class="glow g2"></div><div id="viz1"></div></div>
+
+  <div class="panel">
+    <div class="ptitle"><div class="pic">✦</div><h2>What this module covers</h2></div>
+    <div class="tk"><span class="ar">→</span><p>How to recognize the beginning of a rumination loop before it escalates.</p></div>
+    <div class="tk"><span class="ar">→</span><p>Why interruption has to happen before insight or meaning-making, not after.</p></div>
+    <div class="tk"><span class="ar">→</span><p>The difference between an immediate distraction and a longer, mindful one.</p></div>
+    <div class="tk"><span class="ar">→</span><p>Why cognitive offloading is a standing strategy, not a one-time step.</p></div>
+    <div class="tk"><span class="ar">→</span><p><strong>Outcome:</strong> you leave this module able to catch a loop early and bring yourself down to a workable state.</p></div>
+  </div>
+
+  <div class="panel">
+    <div class="ptitle"><div class="pic">✦</div><h2>Lesson walkthrough</h2></div>
+    <div class="lesson"><div class="ln">Lesson 1</div><h3>Notice the Loop</h3><p>Naming where you are right now, before anything else. The self check gives this a starting point instead of leaving it vague.</p></div>
+    <div class="lesson"><div class="ln">Lesson 2</div><h3>Distract</h3><p>Two forms. Immediate, to break the pattern right now, leaving the room, changing position, turning on the TV. And mindfulness through activity, giving a hobby or task your full attention, for when the loop keeps circling back after the quick version wears off.</p></div>
+    <div class="lesson"><div class="ln">Lesson 3</div><h3>Regulate</h3><p>Cognitive offloading, getting the loop out of your head and onto paper, as a strategy you can return to anytime, not a box to check once. Breathing lives outside this toolkit, in Back to Baseline, for when nothing else is available.</p></div>
+  </div>
+
+  <div class="panel">
+    <div class="ptitle"><div class="pic m">✓</div><h2>Action steps</h2><span class="cnt" id="count-m1">0 of 4 complete</span></div>
+    <button class="step" onclick="toggleStep(this,'m1')"><span class="box"></span><span class="sn">01</span><span class="sb"><strong>Name where you are right now.</strong><span>Use the <a class="steplink" href="https://fearlessworkplace-stack.github.io/breakingtheloop/#understand" target="_blank" rel="noopener" onclick="event.stopPropagation()">self check</a> in the Toolkit.</span></span></button>
+    <button class="step" onclick="toggleStep(this,'m1')"><span class="box"></span><span class="sn">02</span><span class="sb"><strong>Try an immediate distraction.</strong><span>Leave the room, change position, turn on the TV. More options in the <a class="steplink" href="https://fearlessworkplace-stack.github.io/breakingtheloop/#strategies" target="_blank" rel="noopener" onclick="event.stopPropagation()">Toolkit's Strategies</a>.</span></span></button>
+    <button class="step" onclick="toggleStep(this,'m1')"><span class="box"></span><span class="sn">03</span><span class="sb"><strong>Practice mindfulness through an activity.</strong><span>Give a hobby or task your full attention. Folding laundry or cooking works, but a hobby you actually enjoy works best.</span></span></button>
+    <button class="step" onclick="toggleStep(this,'m1')"><span class="box"></span><span class="sn">04</span><span class="sb"><strong>If nothing else works, breathe.</strong><span>Open the Breathe tab in <a class="steplink" href="https://fearlessworkplace-stack.github.io/baseline/" target="_blank" rel="noopener" onclick="event.stopPropagation()">Back to Baseline</a>.</span></span></button>
+  </div>
+
+  <div class="ctaband"><div class="glow"></div><p><em>Next:</em> Making sense of what happened.</p><button class="ctabtn" onclick="go('m2')">Module 2 →</button></div>
+</section>
+
+<!-- ========== MODULE 2 ========== -->
+<section class="view" id="view-m2">
+  <div class="eyebrowrow">
+    <span class="eyebrow">Module 2 of 4</span>
+    <button class="mc" id="mc-m2" onclick="markComplete('m2')"><span class="mc-txt">Mark Complete</span></button>
+  </div>
+  <h1 class="vt">Understand</h1>
+  <div class="goal">Separate facts from story, name why this bothers you so much, and find the feeling underneath it.</div>
+
+  <div class="vizframe"><div class="glow g1"></div><div class="glow g2"></div><div id="viz2"></div></div>
+
+  <div class="panel">
+    <div class="ptitle"><div class="pic">✦</div><h2>What this module covers</h2></div>
+    <div class="tk"><span class="ar">→</span><p>How to separate facts from the story and assumptions attached to them.</p></div>
+    <div class="tk"><span class="ar">→</span><p>Why the brain keeps replaying events that feel unresolved.</p></div>
+    <div class="tk"><span class="ar">→</span><p>How to name specifically why an event bothers you, instead of staying stuck in a vague, general sense that it does.</p></div>
+    <div class="tk"><span class="ar">→</span><p>Why a direct question about feelings often gets a false no, and how to ask sideways instead.</p></div>
+    <div class="tk"><span class="ar">→</span><p><strong>Outcome:</strong> you leave this module with the facts, why it bothers you, and the real feeling underneath, instead of a story that still feels tangled.</p></div>
+  </div>
+
+  <div class="panel">
+    <div class="ptitle"><div class="pic">✦</div><h2>Lesson walkthrough</h2></div>
+    <div class="lesson"><div class="ln">Lesson 1</div><h3>Separating Fact from Story</h3><p>Writing down what happened, plainly, in order, then noticing what you're assuming instead of what you actually know. When a thought keeps replaying, the facts and the story about the facts blur together. The story is usually what keeps the loop running, not the facts themselves.</p></div>
+    <div class="lesson"><div class="ln">Lesson 2</div><h3>Why Does This Bother Me So Much?</h3><p>Naming what got touched, using the SCARF model: status, certainty, autonomy, relatedness, or fairness. Then pointing to the specific moment or detail that actually did it, not just the need in the abstract.</p></div>
+    <div class="lesson"><div class="ln">Lesson 3</div><h3>Getting to the Real Feeling</h3><p>A direct "are you angry?" often gets a no, even when the answer is yes. These questions come in sideways instead, so someone can find the feeling without having to already know what it is.</p></div>
+  </div>
+
+  <div class="panel">
+    <div class="ptitle"><div class="pic m">✓</div><h2>Action steps</h2><span class="cnt" id="count-m2">0 of 5 complete</span></div>
+    <button class="step" onclick="toggleStep(this,'m2')"><span class="box"></span><span class="sn">01</span><span class="sb"><strong>Write what happened.</strong><span>Just the facts, in order.</span></span></button>
+    <button class="step" onclick="toggleStep(this,'m2')"><span class="box"></span><span class="sn">02</span><span class="sb"><strong>Note what you can't actually confirm.</strong><span>The assumptions, not the knowns.</span></span></button>
+    <button class="step" onclick="toggleStep(this,'m2')"><span class="box"></span><span class="sn">03</span><span class="sb"><strong>Name why this bothers you so much.</strong><span>Using SCARF: status, certainty, autonomy, relatedness, or fairness. In the <a class="steplink" href="https://fearlessworkplace-stack.github.io/breakingtheloop/#understand" target="_blank" rel="noopener" onclick="event.stopPropagation()">Toolkit</a>.</span></span></button>
+    <button class="step" onclick="toggleStep(this,'m2')"><span class="box"></span><span class="sn">04</span><span class="sb"><strong>Point to where, exactly.</strong><span>The specific moment or detail that's actually bothering you.</span></span></button>
+    <button class="step" onclick="toggleStep(this,'m2')"><span class="box"></span><span class="sn">05</span><span class="sb"><strong>Work through the sideways questions.</strong><span>If you could say the truest thing about how this feels, what would you say? What part of this still feels unfinished? If a friend told you this exact story, what would you guess they were feeling, that they might not admit out loud? What are you protecting yourself from by staying focused on the details instead of the feeling? And if you're being honest, is any part of this pointed at yourself, not just at them? General feelings-wheel work also lives in <a class="steplink" href="https://fearlessworkplace-stack.github.io/baseline/" target="_blank" rel="noopener" onclick="event.stopPropagation()">Back to Baseline</a>.</span></span></button>
+  </div>
+
+  <div class="ctaband"><div class="glow"></div><p><em>Next:</em> Deciding what to do about it.</p><button class="ctabtn" onclick="go('m3')">Module 3 →</button></div>
+</section>
+
+<!-- ========== MODULE 3 ========== -->
+<section class="view" id="view-m3">
+  <div class="eyebrowrow">
+    <span class="eyebrow">Module 3 of 4</span>
+    <button class="mc" id="mc-m3" onclick="markComplete('m3')"><span class="mc-txt">Mark Complete</span></button>
+  </div>
+  <h1 class="vt">Respond</h1>
+  <div class="goal">Take back your own account of the story, then decide what, if anything, you do about it.</div>
+
+  <div class="vizframe"><div class="glow g1"></div><div class="glow g2"></div><div id="viz3"></div></div>
+
+  <div class="panel">
+    <div class="ptitle"><div class="pic">✦</div><h2>What this module covers</h2></div>
+    <div class="tk"><span class="ar">→</span><p>How to tell your own voice apart from a voice you've internalized from someone else.</p></div>
+    <div class="tk"><span class="ar">→</span><p>How to bring feared possibilities into the open instead of leaving them vague and overwhelming.</p></div>
+    <div class="tk"><span class="ar">→</span><p>How to test a feared outcome against its worst case, best case, and most likely case.</p></div>
+    <div class="tk"><span class="ar">→</span><p>Why acceptance comes first, as the foundation, not as one option among several.</p></div>
+    <div class="tk"><span class="ar">→</span><p>How to choose a response that actually fits, instead of reacting from panic or urgency.</p></div>
+    <div class="tk"><span class="ar">→</span><p><strong>Outcome:</strong> you leave this module with the story in your own voice, and a real decision about what, if anything, comes next.</p></div>
+  </div>
+
+  <div class="panel">
+    <div class="ptitle"><div class="pic">✦</div><h2>Lesson walkthrough</h2></div>
+    <div class="lesson"><div class="ln">Lesson 1</div><h3>Whose Voice Is Loudest</h3><p>Before anything else: yours, or theirs. Naming this opens the module, because everything after it is either reclaiming your own account or still arguing with someone else's.</p></div>
+    <div class="lesson"><div class="ln">Lesson 2</div><h3>Naming the What-Ifs</h3><p>Writing out every feared possibility, as what-if statements, instead of letting them stay vague and circling.</p></div>
+    <div class="lesson"><div class="ln">Lesson 3</div><h3>Reframe</h3><p>For each what-if: the worst case, the best case, the most likely case, and how likely it really is.</p></div>
+    <div class="lesson"><div class="ln">Lesson 4</div><h3>Radical Acceptance</h3><p>The foundation everyone starts from. This happened, and it can't be changed. The feeling doesn't have to disappear for this to have worked.</p></div>
+    <div class="lesson"><div class="ln">Lesson 5</div><h3>Choosing Your Response</h3><p>What, if anything, you also do. Repair, Record for Yourself, Build Your Defense, Boundary Setting, Escalation, or Disengagement, each with its own test for whether it fits.</p></div>
+  </div>
+
+  <div class="panel">
+    <div class="ptitle"><div class="pic m">✓</div><h2>Action steps</h2><span class="cnt" id="count-m3">0 of 5 complete</span></div>
+    <button class="step" onclick="toggleStep(this,'m3')"><span class="box"></span><span class="sn">01</span><span class="sb"><strong>Ask whose voice is loudest.</strong><span>Yours, or theirs, right now.</span></span></button>
+    <button class="step" onclick="toggleStep(this,'m3')"><span class="box"></span><span class="sn">02</span><span class="sb"><strong>Write your what-if list.</strong><span>Every possibility, even the unlikely ones.</span></span></button>
+    <button class="step" onclick="toggleStep(this,'m3')"><span class="box"></span><span class="sn">03</span><span class="sb"><strong>Run the reframe on each what-if.</strong><span>Worst case, best case, most likely case, how likely.</span></span></button>
+    <button class="step" onclick="toggleStep(this,'m3')"><span class="box"></span><span class="sn">04</span><span class="sb"><strong>Start with Radical Acceptance.</strong><span>This happened, and I can't change it.</span></span></button>
+    <button class="step" onclick="toggleStep(this,'m3')"><span class="box"></span><span class="sn">05</span><span class="sb"><strong>Choose your response.</strong><span>Repair, Record for Yourself, Build Your Defense, Boundary Setting, Escalation, or Disengagement, in the <a class="steplink" href="https://fearlessworkplace-stack.github.io/breakingtheloop/#tool-response" target="_blank" rel="noopener" onclick="event.stopPropagation()">Response Menu</a>.</span></span></button>
+  </div>
+
+  <div class="ctaband"><div class="glow"></div><p><em>Next:</em> Making it stick.</p><button class="ctabtn" onclick="go('m4')">Module 4 →</button></div>
+</section>
+
+<!-- ========== MODULE 4 ========== -->
+<section class="view" id="view-m4">
+  <div class="eyebrowrow">
+    <span class="eyebrow">Module 4 of 4</span>
+    <button class="mc" id="mc-m4" onclick="markComplete('m4')"><span class="mc-txt">Mark Complete</span></button>
+  </div>
+  <h1 class="vt">Reclaim</h1>
+  <div class="goal">I can navigate this. It's uncomfortable, but it's not bigger than me.</div>
+
+  <div class="vizframe"><div class="glow g1"></div><div class="glow g2"></div><div id="viz4"></div></div>
+
+  <div class="panel">
+    <div class="ptitle"><div class="pic">✦</div><h2>What this module covers</h2></div>
+    <div class="tk"><span class="ar">→</span><p>The target feeling to end on: I can navigate this, uncomfortable or not.</p></div>
+    <div class="tk"><span class="ar">→</span><p>Reframing a setback as data about the system, not proof you're stuck.</p></div>
+    <div class="tk"><span class="ar">→</span><p>Sorting what's actually yours to navigate from what isn't.</p></div>
+    <div class="tk"><span class="ar">→</span><p>Gathering evidence of your own competence, not building a defense.</p></div>
+    <div class="tk"><span class="ar">→</span><p>Having a plan ready before the next triggering situation, not after.</p></div>
+    <div class="tk"><span class="ar">→</span><p><strong>Outcome:</strong> you leave the course knowing you can navigate this, standing on your own account of yourself.</p></div>
+  </div>
+
+  <div class="panel">
+    <div class="ptitle"><div class="pic">✦</div><h2>Lesson walkthrough</h2></div>
+    <div class="lesson"><div class="ln">Lesson 1</div><h3>The Target Belief</h3><p>Defining the ending belief of the course: I can navigate this. It's uncomfortable, but it's not bigger than me.</p></div>
+    <div class="lesson"><div class="ln">Lesson 2</div><h3>Setbacks as Information</h3><p>Workplace friction is data about the system, not a verdict on your worth.</p></div>
+    <div class="lesson"><div class="ln">Lesson 3</div><h3>What's Mine to Navigate, What Isn't</h3><p>Sorting what you can actually decide, say, build, or change from what's genuinely not yours to fix.</p></div>
+    <div class="lesson"><div class="ln">Lesson 4</div><h3>Evidence of Capability</h3><p>A wins file. Competence you already have, in your own words, not a defense you're building in case of attack.</p></div>
+    <div class="lesson"><div class="ln">Lesson 5</div><h3>The Next-Time Script</h3><p>Regulation, reframe, one action, ready before you need it, so the next triggering situation doesn't start from zero.</p></div>
+  </div>
+
+  <div class="panel">
+    <div class="ptitle"><div class="pic m">✓</div><h2>Action steps</h2><span class="cnt" id="count-m4">0 of 5 complete</span></div>
+    <button class="step" onclick="toggleStep(this,'m4')"><span class="box"></span><span class="sn">01</span><span class="sb"><strong>Name the feeling you're aiming for.</strong><span>I can navigate this, uncomfortable or not.</span></span></button>
+    <button class="step" onclick="toggleStep(this,'m4')"><span class="box"></span><span class="sn">02</span><span class="sb"><strong>Sort what you can control from what you can't.</strong><span>Two lists, side by side.</span></span></button>
+    <button class="step" onclick="toggleStep(this,'m4')"><span class="box"></span><span class="sn">03</span><span class="sb"><strong>Add to your wins file.</strong><span>Evidence of what you can control.</span></span></button>
+    <button class="step" onclick="toggleStep(this,'m4')"><span class="box"></span><span class="sn">04</span><span class="sb"><strong>Write your next-time script.</strong><span>Regulation, reframe, one action, ready in advance.</span></span></button>
+    <button class="step" id="posttestStepBtn" onclick="document.getElementById('posttestPanel').scrollIntoView({behavior:'smooth'})"><span class="box"></span><span class="sn">05</span><span class="sb"><strong>Complete your post-assessment.</strong><span>Same six questions as the start. See your own change.</span></span></button>
+  </div>
+
+  <div class="panel" id="posttestPanel">
+    <div class="ptitle"><div class="pic">✦</div><h2>Your Post-Assessment</h2></div>
+    <p style="font-size:14px;color:var(--slate);line-height:1.6;margin-bottom:18px">You're at the end. This is the same six questions you answered before Module 1, about that same situation, or a similar one if it's changed. This is where you actually see the change, not just feel like something shifted.</p>
+    <button class="bigcta" onclick="toggleAssessment('post')" id="post-toggle-btn">Take My Post-Assessment →</button>
+    <div class="assess-wrap" id="post-assess-wrap">
+      <div id="postAssess"></div>
+      <button class="ctabtn" style="margin-top:6px" onclick="submitAssessment('post')">Get My Score</button>
+      <div class="assess-result" id="post-result"></div>
+    </div>
+  </div>
+
+  <div class="ctaband" id="closingBand"><div class="glow"></div><p id="closingMsg"><em>You made it.</em> You can navigate this.</p><button class="ctabtn" onclick="go('start')">Back to Start →</button></div>
+
+  <details class="sources">
+    <summary>Sources</summary>
+    <div class="sourcesbody">
+      SCARF model: Rock, D. (2008). SCARF: a brain-based model for collaborating with and influencing others.<br>
+      Decatastrophizing / the "what if" technique: Beck, A.; Burns, D.<br>
+      Radical Acceptance: Linehan, M. (DBT).<br>
+      Self-efficacy: Bandura, A.
+    </div>
+  </details>
+</section>
+
+</main>
+</div>
+
+<div style="max-width:640px;margin:0 auto;padding:0 22px 40px;text-align:center">
+  <div style="font-family:var(--font-display);font-weight:400;font-size:18px;letter-spacing:.3px;color:var(--teal);text-transform:uppercase;margin-bottom:12px">Fearless Workplace&trade;</div>
+  <p style="font-size:13px;color:var(--slate);max-width:52ch;margin:0 auto 14px;line-height:1.7"><strong style="color:var(--ink);font-weight:600">This course is provided for educational and informational purposes only.</strong> It is a coaching support resource and is not a substitute for therapy, counseling, or professional mental health treatment. If you are experiencing persistent distress, please reach out to a licensed mental health professional.</p>
+  <p style="font-size:13px;color:var(--slate);max-width:52ch;margin:0 auto 18px;line-height:1.7">Your progress here is saved in this browser only. Nothing is sent anywhere.</p>
+  <button class="mc" onclick="clearDashboardData()" style="margin-bottom:16px">Clear My Saved Progress</button>
+  <p style="font-size:11px;color:var(--slate)">&copy; 2026 Fearless Workplace&trade;, a brand of Vertical Edge Group LLC. All rights reserved.</p>
+</div>
+
+<script>
+const RM=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const NS='http://www.w3.org/2000/svg';
+const TEAL='#4E93AB',COPPER='#C76A2E',CREAM='#F5F7FB',NAVY='#002147',BURGUNDY='#8B2635';
+const state={complete:{m1:false,m2:false,m3:false,m4:false}};
+function el(t,a){const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);return e}
+function txt(x,y,size,fill,content,extra){const t=el('text',Object.assign({x:x,y:y,'text-anchor':'middle','font-size':size,fill:fill,'font-family':'DM Sans'},extra||{}));t.textContent=content;return t}
+
+function go(view){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('view-'+view).classList.add('active');
+  document.querySelectorAll('.ritem').forEach(r=>r.classList.toggle('active',r.dataset.view===view));
+  window.scrollTo({top:0,behavior:RM?'auto':'smooth'});
+}
+
+const KEYS=['m1','m2','m3','m4'];
+function renderProgress(){
+  const done=KEYS.filter(k=>state.complete[k]).length;
+  const pct=Math.round(done/KEYS.length*100);
+  document.getElementById('pctTop').textContent=pct+'%';
+  document.getElementById('pctRail').textContent=pct+'%';
+  document.getElementById('railBar').style.width=pct+'%';
+  document.getElementById('ringFill').style.strokeDashoffset=62.8-(62.8*pct/100);
+  KEYS.forEach(k=>{
+    const r=document.querySelector('.ritem[data-lesson="'+k+'"]');
+    if(r)r.classList.toggle('done',state.complete[k]);
+    const b=document.getElementById('mc-'+k);
+    if(b){b.classList.toggle('done',state.complete[k]);b.querySelector('.mc-txt').textContent=state.complete[k]?'Completed':'Mark Complete'}
+  });
+  drawJourney();
+}
+function markComplete(k){state.complete[k]=!state.complete[k];saveDashboardState();renderProgress()}
+function toggleStep(btn,lesson){
+  btn.classList.toggle('on');
+  const wrap=btn.closest('.panel');
+  const steps=[...wrap.querySelectorAll('.step')];
+  const on=steps.filter(s=>s.classList.contains('on')).length;
+  const total=steps.length;
+  document.getElementById('count-'+lesson).textContent=on+' of '+total+' complete';
+  if(on===total&&!state.complete[lesson]){state.complete[lesson]=true;}
+  saveStepState(lesson,steps);
+  saveDashboardState();
+  renderProgress();
+}
+
+const DASH_STORE_KEY='breakingTheLoopDashboard_v2';
+function loadDashStore(){try{return JSON.parse(localStorage.getItem(DASH_STORE_KEY)||'{}');}catch(e){return {};}}
+function saveDashStore(obj){try{localStorage.setItem(DASH_STORE_KEY,JSON.stringify(obj));}catch(e){}}
+function saveDashboardState(){const s=loadDashStore();s.complete=state.complete;saveDashStore(s);}
+function saveStepState(lesson,steps){
+  const s=loadDashStore();
+  s.steps=s.steps||{};
+  s.steps[lesson]=steps.map(st=>st.classList.contains('on'));
+  saveDashStore(s);
+}
+function clearDashboardData(){
+  if(!confirm('This clears your saved progress on this dashboard, all checked steps, completed modules, and your assessment scores. This cannot be undone. Continue?'))return;
+  try{localStorage.removeItem(DASH_STORE_KEY);}catch(e){}
+  location.reload();
+}
+function restoreDashboardState(){
+  const s=loadDashStore();
+  if(s.complete)Object.assign(state.complete,s.complete);
+  if(s.steps){
+    Object.keys(s.steps).forEach(lesson=>{
+      const wrap=document.getElementById('count-'+lesson)?document.getElementById('count-'+lesson).closest('.panel'):null;
+      if(!wrap)return;
+      const steps=[...wrap.querySelectorAll('.step')];
+      s.steps[lesson].forEach((isOn,i)=>{if(isOn&&steps[i])steps[i].classList.add('on')});
+      const on=steps.filter(st=>st.classList.contains('on')).length;
+      document.getElementById('count-'+lesson).textContent=on+' of '+steps.length+' complete';
+    });
+  }
+  if(typeof s.pretestScore==='number')showAssessResult('pre',s.pretestScore,null);
+  if(typeof s.posttestScore==='number'){
+    showAssessResult('post',s.posttestScore,s.pretestScore);
+    setClosingMessage(s.posttestScore,s.pretestScore);
+  }
+}
+
+const ASSESS_Q=[
+  {id:'d1',reverse:true,text:"When I think about this situation, it keeps coming back no matter what I do, and it feels intense."},
+  {id:'c1',text:"I can usually notice when my mind has started replaying this situation and interrupt the loop."},
+  {id:'c2',text:"I can explain to myself what really bothers me about this situation, not just what happened."},
+  {id:'c3',text:"I feel I have more than one way I could respond to this situation or ones like it."},
+  {id:'c4',text:"I believe I can handle situations like this over time, even if they feel bad in the moment."},
+  {id:'c5',text:"I have at least one simple way to calm myself down when my mind goes back to this situation."}
+];
+function buildAssessment(containerId,prefix){
+  const c=document.getElementById(containerId);
+  c.innerHTML=ASSESS_Q.map((q,i)=>
+    '<div class="assess-q"><p>'+(i+1)+'. '+q.text+'</p>'+
+    '<select id="'+prefix+'-'+q.id+'">'+
+    '<option value="">Choose one</option>'+
+    '<option value="1">1 &mdash; Strongly disagree</option>'+
+    '<option value="2">2 &mdash; Disagree</option>'+
+    '<option value="3">3 &mdash; Neutral</option>'+
+    '<option value="4">4 &mdash; Agree</option>'+
+    '<option value="5">5 &mdash; Strongly agree</option>'+
+    '</select></div>'
+  ).join('');
+}
+function computeAssessScore(prefix){
+  let total=0;
+  for(const q of ASSESS_Q){
+    const elx=document.getElementById(prefix+'-'+q.id);
+    const v=parseInt(elx.value);
+    if(!v)return null;
+    total+=q.reverse?(6-v):v;
+  }
+  return total;
+}
+function toggleAssessment(prefix){
+  const wrap=document.getElementById(prefix+'-assess-wrap');
+  const btn=document.getElementById(prefix+'-toggle-btn');
+  const opening=wrap.style.display!=='block';
+  wrap.style.display=opening?'block':'none';
+  if(btn)btn.style.display=opening?'none':'inline-flex';
+  if(opening)wrap.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+function showAssessResult(prefix,score,otherScore){
+  const box=document.getElementById(prefix+'-result');
+  if(!box)return;
+  let msg=prefix==='pre'
+    ? 'Your starting score: <strong>'+score+'</strong> out of 30.'
+    : 'Your score now: <strong>'+score+'</strong> out of 30.';
+  if(prefix==='post'&&typeof otherScore==='number'){
+    msg+=' Your starting score was <strong>'+otherScore+'</strong>.';
+    const diff=score-otherScore;
+    if(diff>0)msg+=' That is an increase of <strong>'+diff+'</strong> point'+(diff===1?'':'s')+'.';
+    else if(diff<0)msg+=' That is a decrease of <strong>'+Math.abs(diff)+'</strong> point'+(Math.abs(diff)===1?'':'s')+'.';
+    else msg+=' That is no change from where you started.';
+  }
+  box.innerHTML=msg;
+  box.style.display='block';
+  const wrap=document.getElementById(prefix+'-assess-wrap');
+  const btn=document.getElementById(prefix+'-toggle-btn');
+  if(wrap)wrap.style.display='block';
+  if(btn)btn.style.display='none';
+}
+function submitAssessment(prefix){
+  const score=computeAssessScore(prefix);
+  if(score===null){alert('Please answer all six questions first.');return;}
+  const s=loadDashStore();
+  if(prefix==='pre'){
+    s.pretestScore=score;
+    saveDashStore(s);
+    showAssessResult('pre',score,null);
+  }else{
+    s.posttestScore=score;
+    saveDashStore(s);
+    showAssessResult('post',score,s.pretestScore);
+    const btn=document.getElementById('posttestStepBtn');
+    if(btn&&!btn.classList.contains('on'))toggleStep(btn,'m4');
+    setClosingMessage(score,s.pretestScore);
+    setTimeout(()=>{
+      document.getElementById('closingBand').scrollIntoView({behavior:'smooth',block:'center'});
+    },1600);
+  }
+}
+function setClosingMessage(score,pre){
+  const el=document.getElementById('closingMsg');
+  if(!el)return;
+  if(typeof pre==='number'){
+    const diff=score-pre;
+    if(diff>0){
+      el.innerHTML='<em>You made it.</em> You showed up, did the work, and your score increased by '+diff+' point'+(diff===1?'':'s')+'. That is real progress.';
+    }else if(diff<0){
+      el.innerHTML='<em>You made it.</em> Some weeks land harder than others, and today is one of them. Showing up and finishing anyway still counts.';
+    }else{
+      el.innerHTML='<em>You made it.</em> The number held steady, and you still did every piece of this. That matters on its own.';
+    }
+  }else{
+    el.innerHTML='<em>You made it.</em> You can navigate this.';
+  }
+}
+
+const JSTOPS=[
+  {x:90, y:140,t:'MODULE 1',n:'Interrupt',k:'m1'},
+  {x:280,y:70, t:'MODULE 2', n:'Understand',k:'m2'},
+  {x:470,y:140,t:'MODULE 3', n:'Respond',k:'m3'},
+  {x:660,y:70, t:'MODULE 4',n:'Reclaim', k:'m4'}
+];
+function journeyPath(){
+  let d='M '+JSTOPS[0].x+' '+JSTOPS[0].y;
+  for(let i=1;i<JSTOPS.length;i++){
+    const a=JSTOPS[i-1],b=JSTOPS[i];const mx=(a.x+b.x)/2;
+    d+=' C '+mx+' '+a.y+' '+mx+' '+b.y+' '+b.x+' '+b.y;
+  }
+  return d;
+}
+function drawJourney(){
+  const host=document.getElementById('journeySvg');host.innerHTML='';
+  const s=el('svg',{viewBox:'0 0 760 220',width:'100%'});
+  const defs=el('defs',{});
+  const lg=el('linearGradient',{id:'jgrad',x1:'0',y1:'0',x2:'1',y2:'0'});
+  lg.appendChild(el('stop',{offset:'0%','stop-color':TEAL}));
+  lg.appendChild(el('stop',{offset:'100%','stop-color':COPPER}));
+  defs.appendChild(lg);s.appendChild(defs);
+  const titleEl=el('text',{x:16,y:20,'font-size':10,fill:'rgba(255,255,255,.55)','font-family':'DM Sans','letter-spacing':'2','font-weight':700});
+  titleEl.textContent='THE ARC OF THE COURSE';
+  s.appendChild(titleEl);
+  const p=el('path',{d:journeyPath(),fill:'none',stroke:'url(#jgrad)','stroke-width':2.5,'stroke-linecap':'round'});
+  const plen=900;
+  if(!RM){p.setAttribute('stroke-dasharray',plen);p.setAttribute('stroke-dashoffset',plen);p.style.animation='dash 2s ease-out forwards .2s'}
+  s.appendChild(p);
+  JSTOPS.forEach((st,i)=>{
+    const g=el('g',{opacity:RM?1:0});
+    if(!RM){const a=el('animate',{attributeName:'opacity',from:'0',to:'1',begin:(0.4+i*0.4)+'s',dur:'.5s',fill:'freeze'});g.appendChild(a)}
+    const done=state.complete[st.k];
+    if(!RM&&!done){const ring=el('circle',{cx:st.x,cy:st.y,r:10,fill:'none',stroke:COPPER,'stroke-width':1.5});ring.style.transformOrigin=st.x+'px '+st.y+'px';ring.style.animation='pulseRing 2.6s ease-out infinite '+(i*0.4)+'s';g.appendChild(ring)}
+    g.appendChild(el('circle',{cx:st.x,cy:st.y,r:7,fill:done?TEAL:NAVY,stroke:done?TEAL:COPPER,'stroke-width':2}));
+    g.appendChild(txt(st.x,st.y+(st.y<100?-56:-30),9,'rgba(255,255,255,.5)',st.t,{'letter-spacing':'1.5','font-weight':700}));
+    g.appendChild(txt(st.x,st.y+(st.y<100?-40:-14),15,CREAM,st.n,{'font-weight':700}));
+    s.appendChild(g);
+  });
+  host.appendChild(s);
+}
+
+function simpleDiagram(hostId,mainLabel,subLabel){
+  const g=document.getElementById(hostId);
+  const s=el('svg',{viewBox:'0 0 520 180'});
+  const c=el('circle',{cx:260,cy:90,r:46,fill:'rgba(78,147,171,.14)',stroke:TEAL,'stroke-width':2});
+  if(!RM)c.style.animation='floatUp 4s ease-in-out infinite';
+  s.appendChild(c);
+  s.appendChild(txt(260,86,15,CREAM,mainLabel,{'font-weight':700}));
+  s.appendChild(txt(260,106,10,'rgba(255,255,255,.55)',subLabel));
+  g.appendChild(s);
+}
+
+function drawUnderstandJourney(hostId){
+  const g=document.getElementById(hostId);
+  const s=el('svg',{viewBox:'0 0 520 220'});
+  const stops=[
+    {x:60, y:150,label:'Fact from Story'},
+    {x:260,y:76, label:'Why It Bothers Me'},
+    {x:460,y:150,label:'The Real Feeling'}
+  ];
+  let d='M '+stops[0].x+' '+stops[0].y;
+  for(let i=1;i<stops.length;i++){
+    const a=stops[i-1],b=stops[i];const mx=(a.x+b.x)/2;
+    d+=' C '+mx+' '+a.y+' '+mx+' '+b.y+' '+b.x+' '+b.y;
+  }
+  const path=el('path',{d:d,fill:'none',stroke:TEAL,'stroke-width':2.5,'stroke-linecap':'round'});
+  s.appendChild(path);
+  stops.forEach((st,i)=>{
+    const node=el('circle',{cx:st.x,cy:st.y,r:8,fill:NAVY,stroke:COPPER,'stroke-width':2.5});
+    if(!RM)node.style.animation='floatUp 4s ease-in-out infinite '+(i*0.3)+'s';
+    s.appendChild(node);
+    const above=st.y<110;
+    s.appendChild(txt(st.x,st.y+(above?-20:30),9,'rgba(255,255,255,.5)','LESSON '+(i+1),{'letter-spacing':'1.5','font-weight':700}));
+    s.appendChild(txt(st.x,st.y+(above?-4:46),12,CREAM,st.label,{'font-weight':700}));
+  });
+  g.appendChild(s);
+}
+
+buildAssessment('preAssess','pre');
+buildAssessment('postAssess','post');
+restoreDashboardState();
+renderProgress();
+simpleDiagram('viz1','Notice, distract, regulate','in that order');
+drawUnderstandJourney('viz2');
+simpleDiagram('viz3','Whose voice is loudest','reframe, then respond');
+simpleDiagram('viz4','I can navigate this','control · wins · next-time script');
+</script>
+</body>
+</html>
